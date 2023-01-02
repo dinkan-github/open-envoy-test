@@ -1,11 +1,35 @@
 import logging
 import os
+import re
+from typing import List
 
 from code_analyser.utils import FileType, LineType
 
 
 class AbstractCodeAnalyser(object):
+    """
+    This code defines an abstract base class ``AbstractCodeAnalyser`` for analyzing code files. This class has several
+    methods that are meant to be implemented by subclasses to provide regular expressions for identifying different
+    types of lines in code files (e.g., blank lines, lines with single-line comments, lines with multi-line comments,
+    lines with import statements, and lines with variable declarations).
+
+    This class has several the following instance variables:
+
+    ``blank_lines``: The number of blank lines in the code file.
+    ``single_comment_lines``: The number of lines with single-line comments in the code file.
+    ``multi_comment_lines``: The number of lines with multi-line comments in the code file.
+    ``code_lines``: The number of lines with code in the code file (excluding blank lines, comments, import statements,
+    and variable declarations).
+    ``import_lines``: The number of lines with import statements in the code file.
+    ``var_declaration_lines``: The number of lines with variable declarations in the code file.
+
+    """
+
     def __init__(self, path=None, type: FileType = FileType.FILE):
+        """
+        :param path: The path to the code file being analyzed.
+        :param type: The type of the file being analyzed (either a file or a directory). Defaults to file
+        """
         self.__inside_multiline_comment = False
         self.blank_lines = 0
         self.single_comment_lines = 0
@@ -16,22 +40,53 @@ class AbstractCodeAnalyser(object):
         self.__file_path = path
         self.__type = type
 
-    def blank(self):
+    def blank(self) -> re.Pattern:
+        """
+        This method should be implemented by subclasses and should return a regular expression that matches
+         blank lines.
+        :return: an instance of the re.Pattern class
+        """
         raise NotImplementedError
 
-    def single_comment(self):
+    def single_comment(self) -> re.Pattern:
+        """
+        This method should be implemented by subclasses and should return a regular expression that matches lines
+        with single-line comments.
+        :return: an instance of the re.Pattern class
+        """
         raise NotImplementedError
 
-    def multi_comment(self):
+    def multi_comment(self) -> re.Pattern:
+        """
+        This method should be implemented by subclasses and should return a regular expression that matches lines
+        with multi-line comments.
+        :return: an instance of the re.Pattern class
+        """
         raise NotImplementedError
 
-    def import_statement(self):
+    def import_statement(self) -> re.Pattern:
+        """
+        This method should be implemented by subclasses and should return a regular expression that matches lines
+        with import statements.
+        :return: an instance of the re.Pattern class
+        """
         raise NotImplementedError
 
-    def var_declaration(self):
+    def var_declaration(self) -> re.Pattern:
+        """
+         This method should be implemented by subclasses and should return a regular expression that matches
+         lines with variable declarations.
+        :return: an instance of the re.Pattern class
+        """
         raise NotImplementedError
 
-    def _get_line_type(self, line):
+    def _get_line_type(self, line) -> LineType:
+        """
+        Takes a line of code as input and returns the type of the line. This method
+         is used to classify the lines in a code file according to their type.
+        :param line: a line of source code
+        :return: LineType enum
+        """
         if self.__inside_multiline_comment:
             if self.multi_comment().match(line):
                 self.__inside_multiline_comment = False
@@ -50,8 +105,14 @@ class AbstractCodeAnalyser(object):
         return LineType.CODE
 
     def get_breakdown(self):
+        """
+        This method processes a code file (or all the files in a directory) and returns a breakdown of the number
+        of lines of each type in the file(s).
+        :return:
+        """
         if not self.__file_path:
-            return logging.error(f"required a file_path")
+            logging.error(f"required a file_path")
+            return
         else:
             if self.__type == FileType.DIRECTORY:
                 self._process_directory()
@@ -73,7 +134,7 @@ class AbstractCodeAnalyser(object):
                 analyser.get_breakdown()
 
     @staticmethod
-    def _get_lines(file_path):
+    def _get_lines(file_path) -> List[str]:
         lines = []
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
